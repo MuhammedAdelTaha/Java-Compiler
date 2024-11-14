@@ -83,7 +83,7 @@ void NFA::traverse()
 			std::cout << "\t";
 		}
 
-		std::cout << "State " << state.first << ":\n";
+		std::cout << "State " << state.first->getId() << ":\n";
 
 		for (auto x : state.first->getTransitions())
 		{

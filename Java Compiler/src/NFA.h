@@ -1,9 +1,4 @@
 #pragma once
-#include <unordered_map>
-#include <vector>
-#include <cstdint>
-#include <string>
-#include <ostream>
 #include "State.h"
 
 class NFA
