@@ -1,0 +1,5 @@
+﻿  NFA.cpp
+  main.cpp
+E:\Uni\Term 1\Compilers\Project\Java Compiler\Java Compiler\src\NFA.cpp(8,36): warning C4267: 'return': conversion from 'size_t' to 'uint32_t', possible loss of data
+  Generating Code...
+  Java Compiler.vcxproj -> E:\Uni\Term 1\Compilers\Project\Java Compiler\x64\Debug\Java Compiler.exe
