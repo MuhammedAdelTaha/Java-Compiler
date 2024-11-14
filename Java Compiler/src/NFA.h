@@ -2,20 +2,22 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
-
-typedef std::unordered_map<char, std::vector<uint32_t>> StateTransitions;
-typedef uint32_t State;
-typedef uint8_t Transition;
+#include <string>
+#include <ostream>
+#include "State.h"
 
 class NFA
 {
 public:
-	uint32_t addState();
-	void addTranstition(State from, State to, Transition transition);
-	void setStartState(State state);
-	void setTerminalState(State state);
+	NFA(std::shared_ptr<State> startState, std::shared_ptr<State> terminalState);
+	std::shared_ptr<State> getStartState();
+	std::shared_ptr<State> getTerminalState();
+	void concatenate(NFA& other);
+	void unionize(NFA& other);
+	void kleeneClosure();
+	void positiveClosure();
+	void traverse();
 private:
-	std::vector<State> m_StartStates;
-	std::vector<State> m_TerminalStates;
-	std::vector<StateTransitions> m_StatesTransitions;
+	std::shared_ptr<State> m_StartState;
+	std::shared_ptr<State> m_TerminalState;
 };

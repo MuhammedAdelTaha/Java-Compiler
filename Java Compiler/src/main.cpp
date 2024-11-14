@@ -1,17 +1,24 @@
 #include <iostream>
+#include <memory>
 #include "NFA.h"
 
 int main()
 {
-	NFA nfa1;
-	State i = nfa1.addState();
-	State f = nfa1.addState();
+	auto i = std::make_shared<State>();
+	auto f = std::make_shared<State>();
 
-	nfa1.addTranstition(i, f, 'a');
+	i->addTransition(f, 'a');
 
-	NFA nfa2;
-	State a = nfa2.addState();
-	State b = nfa2.addState();
+	auto i1 = std::make_shared<State>();
+	auto f1 = std::make_shared<State>();
 
-	nfa1.addTranstition(i, f, 'b');
+	i1->addTransition(f1, 'b');
+	
+	NFA nfa(i, f);
+	NFA nfa1(i1, f1);
+
+	//nfa.concatenate(nfa1);
+	nfa.unionize(nfa1);
+
+	nfa.traverse();
 }

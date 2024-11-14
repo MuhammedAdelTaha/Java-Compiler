@@ -130,6 +130,7 @@
   <ItemGroup>
     <ClCompile Include="src\NFA.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\State.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="files\nagia.txt" />
@@ -137,6 +138,7 @@
   <ItemGroup>
     <ClInclude Include="src\State.h" />
     <ClInclude Include="src\NFA.h" />
+    <ClInclude Include="src\State.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
