@@ -9,7 +9,9 @@ public:
 	std::shared_ptr<State> getTerminalState();
 	void concatenate(NFA& other);
 	void unionize(NFA& other);
+	void unionize(NFA& other, uint32_t id1, uint32_t id2);
 	void kleeneClosure();
+	void kleeneClosure(uint32_t id1, uint32_t id2);
 	void positiveClosure();
 	void traverse();
 private:
