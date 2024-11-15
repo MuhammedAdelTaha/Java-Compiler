@@ -2,14 +2,19 @@
 #include <vector>
 #include <memory>
 
+class State;
+typedef std::unordered_map<char, std::vector<std::shared_ptr<State>>> Transitions;
+
 class State
 {
 public:
 	State();
-	void addTransition(std::shared_ptr<State> state, uint8_t transition);
-	inline std::unordered_map<char, std::vector<std::shared_ptr<State>>>& getTransitions() { return m_Transitions; }
-	inline uint32_t getId() { return m_Id; }
+	State(uint32_t id);
+    void addTransition(std::shared_ptr<State> state, uint8_t transition);
+    void addTransitions(std::vector<std::shared_ptr<State>> states, uint8_t transition);
+    inline Transitions& getTransitions() { return m_Transitions; }
+    inline uint32_t getId() { return m_Id; }
 private:
-	uint32_t m_Id;
-	std::unordered_map<char, std::vector<std::shared_ptr<State>>> m_Transitions;
+    uint32_t m_Id;
+    Transitions m_Transitions;
 };
