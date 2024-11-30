@@ -9,14 +9,16 @@ class DFA
 {
 public:
 	DFA(NFA& nfa);
-	void minmize();
+	void minimize();
 	std::unordered_map<char, std::map<char, char>> cleanTable();
 	void drawTable(std::unordered_map<char, std::map<char, char>> cleanTable);
 	std::map<EpsilonClosure, std::unordered_map<char, EpsilonClosure>> getTable() { return m_Table; }
 private:
+	std::set<std::set<EpsilonClosure>> initializePartitions();
 	EpsilonClosure getEpsilonClosure(std::shared_ptr<State> initialState);
-	void subsetConstruction(std::shared_ptr<State> initialState);
+	std::set<std::set<EpsilonClosure>> splitPartition(std::set<EpsilonClosure> partition);
+	void subsetConstruction(std::shared_ptr<State> initialState, std::shared_ptr<State> terminalState);
 private:
 	std::map<EpsilonClosure, std::unordered_map<char, EpsilonClosure>> m_Table;
-	std::vector<std::shared_ptr<State>> m_TerminalStates;
+	std::set<EpsilonClosure> m_TerminalClosures;
 };

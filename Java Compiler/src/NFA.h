@@ -5,8 +5,8 @@ class NFA
 {
 public:
 	NFA(std::shared_ptr<State> startState, std::shared_ptr<State> terminalState);
-	std::shared_ptr<State> getStartState();
-	std::shared_ptr<State> getTerminalState();
+	inline std::shared_ptr<State> getStartState() { return m_StartState; }
+	inline std::shared_ptr<State> getTerminalState() { return m_TerminalState; }
 	void concatenate(NFA& other);
 	void unionize(NFA& other);
 	void unionize(NFA& other, uint32_t id1, uint32_t id2);

@@ -7,16 +7,6 @@ NFA::NFA(std::shared_ptr<State> startState, std::shared_ptr<State> terminalState
 {
 }
 
-std::shared_ptr<State> NFA::getStartState()
-{
-	return m_StartState;
-}
-
-std::shared_ptr<State> NFA::getTerminalState()
-{
-	return m_TerminalState;
-}
-
 void NFA::concatenate(NFA& other)
 {
 	for (auto& [c, states] : other.m_StartState->getTransitions())
@@ -118,7 +108,7 @@ void NFA::traverse()
 
 		std::cout << "State " << state.first->getId() << ":\n";
 
-		for (auto x : state.first->getTransitions())
+		for (auto& x : state.first->getTransitions())
 		{
 
 			for (int i = 0; i < state.second + 1; i++)
@@ -128,7 +118,7 @@ void NFA::traverse()
 
 			std::cout << "t[" << x.first << "]" << ":\n" << std::endl;
 
-			for (auto y : x.second)
+			for (auto& y : x.second)
 			{
 				s.push(std::make_pair(y, state.second + 1));
 			}
