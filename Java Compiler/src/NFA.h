@@ -20,3 +20,4 @@ private:
 	std::shared_ptr<State> m_StartState;
 	std::shared_ptr<State> m_TerminalState;
 };
+

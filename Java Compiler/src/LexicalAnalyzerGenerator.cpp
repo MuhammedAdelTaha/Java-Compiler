@@ -2,6 +2,7 @@
 #include <sstream>
 #include <stack>
 #include <cctype>
+#include "Utilities.h"
 #include "RegexHandler.h"
 #include "LexicalAnalyzerGenerator.h"
 
@@ -98,19 +99,6 @@ void LexicalAnalyzerGenerator::processPunctuations(const std::string& line)
         m_Punctuations.push_back(punctuation);
 }
 
-std::vector<std::string> splitWords(const std::string& str) {
-    std::vector<std::string> words;
-    std::istringstream iss(str);
-    std::string word;
-
-    // Use stream extraction to automatically handle multiple whitespaces
-    while (iss >> word) {
-        words.push_back(word);
-    }
-
-    return words;
-}
-
 // Generates DFAs for all regular expressions.
 void LexicalAnalyzerGenerator::generateDFAs() 
 {
@@ -121,7 +109,6 @@ void LexicalAnalyzerGenerator::generateDFAs()
 		std::string postfixExp = regexHandler.infixToPostfix(regex);
         NFA expressionNFA = convertRegexToNFA(postfixExp);
         m_TokenDFAs[name] = DFA(expressionNFA);
-        continue;
     }
 }
 
@@ -161,18 +148,24 @@ NFA LexicalAnalyzerGenerator::convertSymbolToNFA(const std::string& word)
 
     std::shared_ptr<State> currentState = startState;
     std::shared_ptr<State> nextState = std::make_shared<State>();
-    for (auto c : sym)
-    {
-        currentState->addTransition(nextState, c);
-        currentState = nextState;
-        nextState = std::make_shared<State>();
-    }
-    
-    std::shared_ptr<State> terminalState = currentState;
-    
-    return NFA(startState, terminalState);
+	for (size_t i = 0; i < sym.length(); i++)
+	{
+		char c = sym[i];
+		currentState->addTransition(nextState, c);
+		
+        if (i == sym.length() - 1)
+			break;
+
+		currentState = nextState;
+		nextState = std::make_shared<State>();
+	}
+
+	std::shared_ptr<State> terminalState = nextState;
+
+	return NFA(startState, terminalState);
 }
 
+// Converts a regular expression to an NFA.
 NFA LexicalAnalyzerGenerator::convertRegexToNFA(const std::string& postfixExp) 
 {
     // Split the expression on whitespaces.
@@ -193,7 +186,6 @@ NFA LexicalAnalyzerGenerator::convertRegexToNFA(const std::string& postfixExp)
             nfaStack.pop();
             top.kleeneClosure();
             nfaStack.push(top);
-            
         }
         else if (word == "+" && !nfaStack.empty()) // Positive closure.
         {
@@ -204,21 +196,21 @@ NFA LexicalAnalyzerGenerator::convertRegexToNFA(const std::string& postfixExp)
         }
         else if (word == "." && nfaStack.size() >= 2) // Concatenation.
         {
-            NFA first = nfaStack.top();
+            NFA right = nfaStack.top();
             nfaStack.pop();
-            NFA second = nfaStack.top();
+            NFA left = nfaStack.top();
             nfaStack.pop();
-            first.concatenate(second);
-            nfaStack.push(first);
+            left.concatenate(right);
+            nfaStack.push(left);
         }
         else if (word == "|" && nfaStack.size() >= 2) // Union.
         {
-            NFA first = nfaStack.top();
+            NFA right = nfaStack.top();
             nfaStack.pop();
-            NFA second = nfaStack.top();
+            NFA left = nfaStack.top();
             nfaStack.pop();
-            first.unionize(second);
-            nfaStack.push(first);
+            left.unionize(right);
+            nfaStack.push(left);
         }
         else // Other terminal symbols.
         {

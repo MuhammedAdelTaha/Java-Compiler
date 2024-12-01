@@ -4,6 +4,7 @@
 #include <memory>
 
 class State;
+static uint32_t nextStateId = 0;
 typedef std::unordered_map<char, std::vector<std::shared_ptr<State>>> Transitions;
 
 class State

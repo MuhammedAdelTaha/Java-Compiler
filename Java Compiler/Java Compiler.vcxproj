@@ -135,6 +135,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\RegexHandler.cpp" />
     <ClCompile Include="src\State.cpp" />
+    <ClCompile Include="src\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="files\rules.txt" />
@@ -146,6 +147,7 @@
     <ClInclude Include="src\RegexHandler.h" />
     <ClInclude Include="src\State.h" />
     <ClInclude Include="src\NFA.h" />
+    <ClInclude Include="src\Utilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

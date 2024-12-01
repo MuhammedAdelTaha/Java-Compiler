@@ -1,7 +1,5 @@
 #include "State.h"
 
-static uint32_t nextStateId = 0;
-
 State::State()
 	: m_Id(nextStateId++)
 {
