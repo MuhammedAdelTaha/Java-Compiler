@@ -7,7 +7,6 @@ State::State()
 {
 }
 
-// TODO: Handle if there is already a state that has this id.
 State::State(uint32_t id)
 	: m_Id(id)
 {

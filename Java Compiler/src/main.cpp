@@ -3,51 +3,46 @@
 #include <set>
 #include "NFA.h"
 #include "DFA.h"
+#include "LexicalAnalyzerGenerator.h"
 
 int main()
 {
-	auto s2 = std::make_shared<State>(2);
-	auto s3 = std::make_shared<State>(3);
-	auto s4 = std::make_shared<State>(4);
-	auto s5 = std::make_shared<State>(5);
-	auto s7 = std::make_shared<State>(100);
-	auto s8 = std::make_shared<State>(8);
-	auto s9 = std::make_shared<State>(101);
-	auto s10 = std::make_shared<State>(9);
-	auto s11 = std::make_shared<State>(102);
-	auto s12 = std::make_shared<State>(10);
+	const std::string relativeFilePath = "files\\rules.txt";
+	LexicalAnalyzerGenerator generator(relativeFilePath);
+	
+	auto tokensPrecedence = generator.getTokensPrecedence();
+	auto regularDefinitions = generator.getRegularDefinitions();
+	auto regularExpressions = generator.getRegularExpressions();
+	auto keywords = generator.getKeywords();
+	auto punctuations = generator.getPunctuations();
 
-	s2->addTransition(s3, 'a');
-	s4->addTransition(s5, 'b');
+	// Print them
+	std::cout << "Tokens Precedence:\n";
+	for (const auto& token : tokensPrecedence)
+		std::cout << token << std::endl;
 
-	NFA nfa1(s2, s3);
-	NFA nfa2(s4, s5);
+	std::cout << "\nRegular Definitions:\n";
+	for (const auto& [name, definition] : regularDefinitions)
+		std::cout << name << " -> " << definition << std::endl;
 
-	nfa1.unionize(nfa2, 1, 6);
-	nfa1.kleeneClosure(0, 7);
+	std::cout << "\nRegular Expressions:\n";
+	for (const auto& [name, regex] : regularExpressions)
+		std::cout << name << " -> " << regex << std::endl;
 
-	s7->addTransition(s8, 'a');
-	s9->addTransition(s10, 'b');
-	s11->addTransition(s12, 'b');
+	std::cout << "\nKeywords:\n";
+	for (const auto& keyword : keywords)
+		std::cout << keyword << std::endl;
 
-	NFA nfa3(s7, s8);
-	NFA nfa4(s9, s10);
-	NFA nfa5(s11, s12);
+	std::cout << "\nPunctuations:\n";
+	for (const auto& punct : punctuations)
+		std::cout << punct << std::endl;
 
-	nfa3.concatenate(nfa4);
-	nfa3.concatenate(nfa5);
+	auto tokenDFAs = generator.getTokenDFAs();
+	for (auto [name, dfa] : tokenDFAs)
+	{
+		std::cout << "\nDFA for " << name << ":\n";
+		dfa.drawTable(dfa.cleanTable());
+	}
 
-	nfa1.concatenate(nfa3);
-
-	DFA dfa(nfa1);
-
-	auto table = dfa.getTable();
-	auto cleanTable = dfa.cleanTable();
-	dfa.drawTable(cleanTable);
-
-	// A -> B
-	// B -> 
-	// C -> 
-	// D -> C
-	// E -> A
+	return 0;
 }

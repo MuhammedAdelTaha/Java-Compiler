@@ -1,0 +1,231 @@
+#include <fstream>
+#include <sstream>
+#include <stack>
+#include <cctype>
+#include "RegexHandler.h"
+#include "LexicalAnalyzerGenerator.h"
+
+LexicalAnalyzerGenerator::LexicalAnalyzerGenerator(const std::string& filePath)
+    : m_FilePath(filePath)
+{
+	readRulesFromFile();
+	generateDFAs();
+}
+
+// Reads the rules from the file and writes them to the corresponding data structures.
+void LexicalAnalyzerGenerator::readRulesFromFile() 
+{
+    std::ifstream file(m_FilePath);
+    std::string line;
+
+    if (file.peek() == 0xEF) 
+    {
+        char bom[3];
+        file.read(bom, 3);
+        if (!(bom[0] == (char)0xEF && bom[1] == (char)0xBB && bom[2] == (char)0xBF))
+            file.seekg(0);
+    }
+
+    while (std::getline(file, line)) 
+    {
+        // Remove leading and trailing whitespaces.
+        line.erase(0, line.find_first_not_of(" \t"));
+        line.erase(line.find_last_not_of(" \t") + 1);
+
+        if (line.empty()) 
+            continue;
+
+        // Process different types of rules.
+        if (line.find(':') != std::string::npos)
+            processRegularExpression(line);
+        else if (line.find('=') != std::string::npos)
+            processRegularDefinition(line);
+        else if (line[0] == '{' && line.back() == '}')
+            processKeywords(line);
+        else if (line[0] == '[' && line.back() == ']')
+            processPunctuations(line);
+    }
+}
+
+// Processes a regular definition and adds it to the regular definitions map.
+void LexicalAnalyzerGenerator::processRegularDefinition(const std::string& line) 
+{
+    // Trim all whitespaces.
+	std::string trimmedLine = line;
+	trimmedLine.erase(std::remove_if(trimmedLine.begin(), trimmedLine.end(), ::isspace), trimmedLine.end());
+
+    size_t pos = trimmedLine.find('=');
+    std::string lhs = trimmedLine.substr(0, pos);
+    std::string rhs = trimmedLine.substr(pos + 1);
+
+	m_RegularDefinitions[lhs] = rhs;
+}
+
+// Processes a regular expression and adds it to the regular expressions map.
+void LexicalAnalyzerGenerator::processRegularExpression(const std::string& line) 
+{
+    // Trim all whitespaces.
+    std::string trimmedLine = line;
+    trimmedLine.erase(std::remove_if(trimmedLine.begin(), trimmedLine.end(), ::isspace), trimmedLine.end());
+
+    size_t pos = trimmedLine.find(':');
+    std::string lhs = trimmedLine.substr(0, pos);
+    std::string rhs = trimmedLine.substr(pos + 1);
+
+    // Push the token name in the tokens precedence vector, which determines the order, where the tokens were defined.
+    m_TokensPrecedence.push_back(lhs);
+
+    m_RegularExpressions[lhs] = rhs;
+}
+
+// Processes a list of keywords and adds them to the keywords vector.
+void LexicalAnalyzerGenerator::processKeywords(const std::string& line) 
+{
+    std::istringstream ss(line.substr(1, line.length() - 2));
+    std::string keyword;
+
+    while (ss >> keyword)
+        m_Keywords.push_back(keyword);
+}
+
+// Processes a list of punctuations and adds them to the punctuations vector.
+void LexicalAnalyzerGenerator::processPunctuations(const std::string& line) 
+{
+    std::istringstream ss(line.substr(1, line.length() - 2));
+    std::string punctuation;
+
+    while (ss >> punctuation)
+        m_Punctuations.push_back(punctuation);
+}
+
+std::vector<std::string> splitWords(const std::string& str) {
+    std::vector<std::string> words;
+    std::istringstream iss(str);
+    std::string word;
+
+    // Use stream extraction to automatically handle multiple whitespaces
+    while (iss >> word) {
+        words.push_back(word);
+    }
+
+    return words;
+}
+
+// Generates DFAs for all regular expressions.
+void LexicalAnalyzerGenerator::generateDFAs() 
+{
+    // Generate DFAs for regular expressions
+    for (const auto& [name, regex] : m_RegularExpressions) 
+    {
+        RegexHandler regexHandler;
+		std::string postfixExp = regexHandler.infixToPostfix(regex);
+        NFA expressionNFA = convertRegexToNFA(postfixExp);
+        m_TokenDFAs[name] = DFA(expressionNFA);
+        continue;
+    }
+}
+
+// Converts a regular definition to an NFA.
+NFA LexicalAnalyzerGenerator::convertDefToNFA(const std::string& def) 
+{
+	std::shared_ptr<State> startState = std::make_shared<State>();
+	std::shared_ptr<State> terminalState = std::make_shared<State>();
+    for (size_t i = 0; i < def.length(); i++) 
+    {
+        if (def[i] == '|')
+            continue;
+        if (def[i] == '-') 
+        {
+            char startSymbol = def[i - 1];
+            char endSymbol = def[i + 1];
+            for (char c = startSymbol; c <= endSymbol; c++)
+				startState->addTransition(terminalState, c);
+        }
+    }
+	return NFA(startState, terminalState);
+}
+
+// Converts a symbol to an NFA.
+NFA LexicalAnalyzerGenerator::convertSymbolToNFA(const std::string& word)
+{
+    std::string sym = word;
+	if (word[0] == '\\')
+    {
+        if (word[1] == 'L') // Epsilon (Lambda) transition.
+			sym = std::string(1, 0);
+        else
+            sym = word.substr(1, word.size() - 1);
+	}
+
+    std::shared_ptr<State> startState = std::make_shared<State>();
+
+    std::shared_ptr<State> currentState = startState;
+    std::shared_ptr<State> nextState = std::make_shared<State>();
+    for (auto c : sym)
+    {
+        currentState->addTransition(nextState, c);
+        currentState = nextState;
+        nextState = std::make_shared<State>();
+    }
+    
+    std::shared_ptr<State> terminalState = currentState;
+    
+    return NFA(startState, terminalState);
+}
+
+NFA LexicalAnalyzerGenerator::convertRegexToNFA(const std::string& postfixExp) 
+{
+    // Split the expression on whitespaces.
+    std::vector<std::string> words = splitWords(postfixExp);
+
+    // Stack to handle postfix expressions conversion.
+    std::stack<NFA> nfaStack;
+
+    for (std::string word : words)
+    {
+        if (m_RegularDefinitions.count(word)) // Regular definitions.
+        {
+            nfaStack.push(convertDefToNFA(m_RegularDefinitions[word]));
+        }
+        else if (word == "*" && !nfaStack.empty()) // Kleene closure.
+        {
+            NFA top = nfaStack.top();
+            nfaStack.pop();
+            top.kleeneClosure();
+            nfaStack.push(top);
+            
+        }
+        else if (word == "+" && !nfaStack.empty()) // Positive closure.
+        {
+            NFA top = nfaStack.top();
+            nfaStack.pop();
+            top.positiveClosure();
+            nfaStack.push(top);
+        }
+        else if (word == "." && nfaStack.size() >= 2) // Concatenation.
+        {
+            NFA first = nfaStack.top();
+            nfaStack.pop();
+            NFA second = nfaStack.top();
+            nfaStack.pop();
+            first.concatenate(second);
+            nfaStack.push(first);
+        }
+        else if (word == "|" && nfaStack.size() >= 2) // Union.
+        {
+            NFA first = nfaStack.top();
+            nfaStack.pop();
+            NFA second = nfaStack.top();
+            nfaStack.pop();
+            first.unionize(second);
+            nfaStack.push(first);
+        }
+        else // Other terminal symbols.
+        {
+            nfaStack.push(convertSymbolToNFA(word));
+        }
+    }
+
+    // Final NFA will be on top of the stack
+    return nfaStack.top();
+}

@@ -129,15 +129,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\DFA.cpp" />
+    <ClCompile Include="src\LexicalAnalyzer.cpp" />
+    <ClCompile Include="src\LexicalAnalyzerGenerator.cpp" />
     <ClCompile Include="src\NFA.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\RegexHandler.cpp" />
     <ClCompile Include="src\State.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="files\nagia.txt" />
+    <Text Include="files\rules.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\DFA.h" />
+    <ClInclude Include="src\LexicalAnalyzer.h" />
+    <ClInclude Include="src\LexicalAnalyzerGenerator.h" />
+    <ClInclude Include="src\RegexHandler.h" />
     <ClInclude Include="src\State.h" />
     <ClInclude Include="src\NFA.h" />
   </ItemGroup>
