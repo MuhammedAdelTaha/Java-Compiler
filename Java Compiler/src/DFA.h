@@ -20,7 +20,7 @@ public:
 private:
 	std::set<std::set<EpsilonClosure>> initializePartitions();
 	EpsilonClosure getEpsilonClosure(std::shared_ptr<State> startState);
-	std::set<std::set<EpsilonClosure>> splitPartition(std::set<EpsilonClosure> partition);
+	std::set<std::set<EpsilonClosure>> splitPartition(std::set<EpsilonClosure> partition, std::map<EpsilonClosure, EpsilonClosure> representativeClosure);
 	void subsetConstruction(std::shared_ptr<State> startState, std::shared_ptr<State> terminalState);
 
 private:

@@ -5,6 +5,7 @@
 #include "Utilities.h"
 #include "RegexHandler.h"
 #include "LexicalAnalyzerGenerator.h"
+#include <iostream>
 
 LexicalAnalyzerGenerator::LexicalAnalyzerGenerator(const std::string& filePath)
     : m_FilePath(filePath)
@@ -109,6 +110,7 @@ void LexicalAnalyzerGenerator::generateDFAs()
 		std::string postfixExp = regexHandler.infixToPostfix(regex);
         NFA expressionNFA = convertRegexToNFA(postfixExp);
         m_TokenDFAs[name] = DFA(expressionNFA);
+        m_TokenDFAs[name].drawTable(m_TokenDFAs[name].cleanTable());
     }
 }
 
@@ -220,4 +222,38 @@ NFA LexicalAnalyzerGenerator::convertRegexToNFA(const std::string& postfixExp)
 
     // Final NFA will be on top of the stack
     return nfaStack.top();
+}
+
+int main()
+{
+    // Dummy states for debugging
+    //for (int i = 0; i < 20; i++)
+        //std::shared_ptr<State> dummy = std::make_shared<State>();
+
+    std::string regdef2 = "digit = 0-1";
+    std::string regdef1 = "letter = a-b";
+    std::string regexp1 = "id: letter . (letter|digit)*";
+    std::string regexp2 = "num: digit+ | digit+ . \\. . digit+ . ( \\L | E . digit+)";
+    std::string regexp3 = "addop: \\+ | -";
+    std::string regexp4 = "mulop: \\* | /";
+    std::string regexp5 = "assign: =";
+    std::string regexp6 = "relop: =.= | !.= | > | >.= | < | <.=";
+    std::string regexp7 = "logicalop: &.& | \\|.\\| | !";
+
+    LexicalAnalyzerGenerator generator;
+    generator.processRegularDefinition(regdef1);
+    generator.processRegularDefinition(regdef2);
+    generator.processRegularExpression(regexp1);
+    generator.processRegularExpression(regexp2);
+    generator.processRegularExpression(regexp3);
+    generator.processRegularExpression(regexp4);
+    generator.processRegularExpression(regexp5);
+    generator.processRegularExpression(regexp6);
+    generator.processRegularExpression(regexp7);
+
+    std::map<EpsilonClosure, EpsilonClosure> mp;
+    auto x = mp[EpsilonClosure()];
+
+    generator.generateDFAs();
+    return 0;
 }

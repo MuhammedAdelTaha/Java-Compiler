@@ -7,6 +7,7 @@
 class LexicalAnalyzerGenerator 
 {
 public:
+    LexicalAnalyzerGenerator() = default;
     LexicalAnalyzerGenerator(const std::string& filePath);
 
     inline std::vector<std::string> getTokensPrecedence() const { return m_TokensPrecedence; }
@@ -16,7 +17,7 @@ public:
 	inline std::vector<std::string> getPunctuations() const { return m_Punctuations; }
 	inline std::map<std::string, DFA> getTokenDFAs() const { return m_TokenDFAs; }
 
-private:
+//private:
     void generateDFAs();
     void readRulesFromFile();
     void processRegularDefinition(const std::string& line);

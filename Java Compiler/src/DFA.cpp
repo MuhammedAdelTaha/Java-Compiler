@@ -90,6 +90,8 @@ void DFA::subsetConstruction(std::shared_ptr<State> startState, std::shared_ptr<
 				continue;
 
 			epsilonClosures.insert(closure);
+			if (!m_Table.contains(closure))
+				m_Table.emplace(closure, std::unordered_map<char, EpsilonClosure>());
 			stack.push(closure);
 		}
 	}
@@ -111,8 +113,17 @@ std::unordered_map<char, std::map<char, char>> DFA::cleanTable() {
 
 	std::unordered_map<char, std::map<char, char>> cleanedTable;
 	for (auto [fromClosure, transitions] : m_Table)
+	{
+		if (transitions.size() == 0)
+		{
+			cleanedTable.emplace(mappedStates[fromClosure], std::map<char, char>());
+		}
+
 		for (auto [t, toClosure] : transitions)
+		{
 			cleanedTable[mappedStates[fromClosure]][t] = mappedStates[toClosure];
+		}
+	}
 
 	return cleanedTable;
 }
@@ -156,31 +167,50 @@ std::set<std::set<EpsilonClosure>> DFA::initializePartitions() {
 }
 
 // Splits a partition into sub-partitions.
-std::set<std::set<EpsilonClosure>> DFA::splitPartition(std::set<EpsilonClosure> partition)
+std::set<std::set<EpsilonClosure>> DFA::splitPartition(std::set<EpsilonClosure> partition, std::map<EpsilonClosure, EpsilonClosure> representativeClosure)
 {
-    // If partition is empty or has only one closure, return it as is.
-    if (partition.size() <= 1)
-        return { partition };
+	// If partition is empty or has only one closure, return it as is.
+	if (partition.size() <= 1)
+		return { partition };
 
-    for (auto closure : partition)
-    {
-		for (auto [_, nextClosure] : m_Table[closure])
+	std::map<EpsilonClosure, std::map<char, EpsilonClosure>> transitions;
+
+	for (auto closure : partition)
+	{
+		for (auto [t, nextClosure] : m_Table[closure])
 		{
-			if (!partition.contains(nextClosure))
-            {
-				partition.erase(closure);
-				return { partition, { closure } };
-			}
+			transitions[closure][t] = representativeClosure[nextClosure];
 		}
-    }
+	}
 
-	return { partition };
+	std::map<std::map<char, EpsilonClosure>, std::set<EpsilonClosure>> unique;
+	for (auto& [closure, t] : transitions)
+	{
+		if (!unique.contains(t))
+		{
+			unique[t] = { closure };
+		}
+		else
+		{
+			unique[t].emplace(closure);
+		}
+	}
+
+	std::set<std::set<EpsilonClosure>> split;
+	for (auto [_, closureSet] : unique)
+	{
+		split.insert(closureSet);
+	}
+
+	return split;
 }
 
 // Minimizes the DFA.
 void DFA::minimize()
 {
     // If the table is empty or has only one state, no minimization is needed.
+
+	// TODO: change this or change the table to reflect all states in the DFA even if they dont have any transitions
     if (m_Table.size() <= 1) 
         return;
 
@@ -192,6 +222,14 @@ void DFA::minimize()
     {
         isPartitionsChanged = false;
         std::set<std::set<EpsilonClosure>> newPartitions;
+		std::map<EpsilonClosure, EpsilonClosure> representativeClosure;
+
+		for (auto& partition : partitions)
+		{
+			EpsilonClosure representative = *partition.begin();
+			for (auto& closure : partition)
+				representativeClosure[closure] = representative;
+		}
 
         for (auto partition : partitions)
         {
@@ -203,7 +241,7 @@ void DFA::minimize()
             }
 
             // Split the partition into sub-partitions if possible
-            std::set<std::set<EpsilonClosure>> splittedPartitions = splitPartition(partition);
+            std::set<std::set<EpsilonClosure>> splittedPartitions = splitPartition(partition, representativeClosure);
 
             if (splittedPartitions.size() > 1)
             {
@@ -220,26 +258,34 @@ void DFA::minimize()
     std::map<EpsilonClosure, std::unordered_map<char, EpsilonClosure>> newTable;
     std::set<EpsilonClosure> newTerminalClosures;
 
+	std::map<EpsilonClosure, EpsilonClosure> representativeClosure;
+	for (auto& partition : partitions)
+	{
+		EpsilonClosure representative = *partition.begin();
+		for (auto& closure : partition)
+			representativeClosure[closure] = representative;
+	}
+
     for (auto partition : partitions)
     {
-        // Choose the first closure in a partition to be a representative closure.
-        EpsilonClosure representativeClosure = *partition.begin();
+		EpsilonClosure representative = *partition.begin();
 
         // Copy the transitions of the representative closure from the original table to the new one.
-		std::unordered_map<char, EpsilonClosure> transitions = m_Table[representativeClosure];
+		std::unordered_map<char, EpsilonClosure> transitions = m_Table[representative];
 		
 		for (auto [input, toClosure] : transitions)
-			if (partition.contains(toClosure))
-				transitions[input] = representativeClosure;
+		{
+			transitions[input] = representativeClosure[toClosure];
+		}
 
-		newTable[representativeClosure] = transitions;
+		newTable[representative] = transitions;
 
         // If the partition has a terminal closure, then insert the representative closure of the partition into the terminal closures.
         for (auto terminalClosure : m_TerminalClosures)
         {
             if (partition.contains(terminalClosure))
             {
-                newTerminalClosures.insert(representativeClosure);
+                newTerminalClosures.insert(representative);
                 break;
             }
         }
