@@ -237,6 +237,7 @@ int main()
     std::string regexp3 = "addop: \\+ | -";
     std::string regexp4 = "mulop: \\* | /";
     std::string regexp5 = "assign: =";
+    //std::string regexp6 = "relop: < | <.=";
     std::string regexp6 = "relop: =.= | !.= | > | >.= | < | <.=";
     std::string regexp7 = "logicalop: &.& | \\|.\\| | !";
 

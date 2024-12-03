@@ -177,6 +177,7 @@ std::set<std::set<EpsilonClosure>> DFA::splitPartition(std::set<EpsilonClosure> 
 
 	for (auto closure : partition)
 	{
+		transitions[closure] = std::map<char, EpsilonClosure>();
 		for (auto [t, nextClosure] : m_Table[closure])
 		{
 			transitions[closure][t] = representativeClosure[nextClosure];
