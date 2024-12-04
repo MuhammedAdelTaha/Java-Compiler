@@ -2,18 +2,28 @@
 #include <stack>
 #include "NFA.h"
 
-NFA::NFA(std::shared_ptr<State> startState, std::shared_ptr<State> terminalState)
-	: m_StartState(startState), m_TerminalState(terminalState)
+NFA::NFA(std::shared_ptr<State> startState, std::set<std::shared_ptr<State>> terminalStates)
+	: m_StartState(startState), m_TerminalStates(terminalStates)
 {
+}
+
+std::shared_ptr<State> NFA::combineTerminalStates(std::set<std::shared_ptr<State>>& terminalStates)
+{
+	std::shared_ptr<State> combinedTerminalState = std::make_shared<State>();
+	for (auto terminalState : terminalStates)
+		terminalState->addTransition(combinedTerminalState, 0);
+
+	return combinedTerminalState;
 }
 
 void NFA::concatenate(NFA& other)
 {
+	std::shared_ptr<State> combinedTerminalState = combineTerminalStates(m_TerminalStates);
+
 	for (auto& [c, states] : other.m_StartState->getTransitions())
-	{
-		m_TerminalState->addTransitions(states, c);
-	}
-	m_TerminalState = other.m_TerminalState;
+		combinedTerminalState->addTransitions(states, c);
+
+	m_TerminalStates = other.m_TerminalStates;
 }
 
 void NFA::unionize(NFA& other)
@@ -21,107 +31,46 @@ void NFA::unionize(NFA& other)
 	std::shared_ptr<State> newStart = std::make_shared<State>();
 	std::shared_ptr<State> newTerminal = std::make_shared<State>();
 
+	std::shared_ptr<State> combinedTerminalState1 = combineTerminalStates(m_TerminalStates);
+	std::shared_ptr<State> combinedTerminalState2 = combineTerminalStates(other.m_TerminalStates);
+
 	newStart->addTransition(m_StartState, 0);
 	newStart->addTransition(other.m_StartState, 0);
 	
-	m_TerminalState->addTransition(newTerminal, 0);
-	other.m_TerminalState->addTransition(newTerminal, 0);
+	combinedTerminalState1->addTransition(newTerminal, 0);
+	combinedTerminalState2->addTransition(newTerminal, 0);
 
 	m_StartState = newStart;
-	m_TerminalState = newTerminal;
-}
-
-void NFA::unionize(NFA& other, uint32_t id1, uint32_t id2)
-{
-	std::shared_ptr<State> newStart = std::make_shared<State>(id1);
-	std::shared_ptr<State> newTerminal = std::make_shared<State>(id2);
-
-	newStart->addTransition(m_StartState, 0);
-	newStart->addTransition(other.m_StartState, 0);
-
-	m_TerminalState->addTransition(newTerminal, 0);
-	other.m_TerminalState->addTransition(newTerminal, 0);
-
-	m_StartState = newStart;
-	m_TerminalState = newTerminal;
+	m_TerminalStates = { newTerminal };
 }
 
 void NFA::kleeneClosure()
 {
 	std::shared_ptr<State> newStart = std::make_shared<State>();
 	std::shared_ptr<State> newTerminal = std::make_shared<State>();
+	std::shared_ptr<State> combinedTerminalState = combineTerminalStates(m_TerminalStates);
 
 	newStart->addTransition(m_StartState, 0);
 	newStart->addTransition(newTerminal, 0);
 
-	m_TerminalState->addTransition(m_StartState, 0);
-	m_TerminalState->addTransition(newTerminal, 0);
+	combinedTerminalState->addTransition(m_StartState, 0);
+	combinedTerminalState->addTransition(newTerminal, 0);
 
 	m_StartState = newStart;
-	m_TerminalState = newTerminal;
-}
-
-void NFA::kleeneClosure(uint32_t id1, uint32_t id2)
-{
-	std::shared_ptr<State> newStart = std::make_shared<State>(id1);
-	std::shared_ptr<State> newTerminal = std::make_shared<State>(id2);
-
-	newStart->addTransition(m_StartState, 0);
-	newStart->addTransition(newTerminal, 0);
-
-	m_TerminalState->addTransition(m_StartState, 0);
-	m_TerminalState->addTransition(newTerminal, 0);
-
-	m_StartState = newStart;
-	m_TerminalState = newTerminal;
+	m_TerminalStates = { newTerminal };
 }
 
 void NFA::positiveClosure()
 {
 	std::shared_ptr<State> newStart = std::make_shared<State>();
 	std::shared_ptr<State> newTerminal = std::make_shared<State>();
+	std::shared_ptr<State> combinedTerminalState = combineTerminalStates(m_TerminalStates);
 
 	newStart->addTransition(m_StartState, 0);
 
-	m_TerminalState->addTransition(m_StartState, 0);
-	m_TerminalState->addTransition(newTerminal, 0);
+	combinedTerminalState->addTransition(m_StartState, 0);
+	combinedTerminalState->addTransition(newTerminal, 0);
 
 	m_StartState = newStart;
-	m_TerminalState = newTerminal;
-}
-
-void NFA::traverse()
-{
-	std::stack<std::pair<std::shared_ptr<State>, int>> s;
-	s.push(std::make_pair(m_StartState, 0));
-
-	int index = 0;
-	while (!s.empty())
-	{
-		std::pair<std::shared_ptr<State>, int> state = s.top();
-		s.pop();
-
-		for (int i = 0; i < state.second; i++)
-		{
-			std::cout << "\t";
-		}
-
-		std::cout << "State " << state.first->getId() << ":\n";
-
-		for (auto& x : state.first->getTransitions())
-		{
-
-			for (int i = 0; i < state.second + 1; i++)
-			{
-				std::cout << "\t";
-			}
-
-			std::cout << "t[" << x.first << "]" << ":\n" << std::endl;
-
-			for (auto& y : x.second)
-			{
-				s.push(std::make_pair(y, state.second + 1));
-			}
-		}
-	}
+	m_TerminalStates = { newTerminal };
 }

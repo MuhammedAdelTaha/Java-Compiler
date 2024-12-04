@@ -5,13 +5,12 @@
 #include "Utilities.h"
 #include "RegexHandler.h"
 #include "LexicalAnalyzerGenerator.h"
-#include <iostream>
 
 LexicalAnalyzerGenerator::LexicalAnalyzerGenerator(const std::string& filePath)
     : m_FilePath(filePath)
 {
 	readRulesFromFile();
-	generateDFAs();
+	generateDFA();
 }
 
 // Reads the rules from the file and writes them to the corresponding data structures.
@@ -75,7 +74,7 @@ void LexicalAnalyzerGenerator::processRegularExpression(const std::string& line)
     std::string rhs = trimmedLine.substr(pos + 1);
 
     // Push the token name in the tokens precedence vector, which determines the order, where the tokens were defined.
-    m_TokensPrecedence.push_back(lhs);
+	m_TokensPrecedence[lhs] = m_TokensPrecedence.size() + 1;
 
     m_RegularExpressions[lhs] = rhs;
 }
@@ -101,17 +100,44 @@ void LexicalAnalyzerGenerator::processPunctuations(const std::string& line)
 }
 
 // Generates DFAs for all regular expressions.
-void LexicalAnalyzerGenerator::generateDFAs() 
+void LexicalAnalyzerGenerator::generateDFA()
 {
-    // Generate DFAs for regular expressions
-    for (const auto& [name, regex] : m_RegularExpressions) 
+    std::vector<NFA> nfas;
+    std::map<std::string, EpsilonClosure> regexTerminalStates;
+
+    // Generate DFA for regular expressions.
+    for (auto [name, regex] : m_RegularExpressions)
     {
-        RegexHandler regexHandler;
-		std::string postfixExp = regexHandler.infixToPostfix(regex);
-        NFA expressionNFA = convertRegexToNFA(postfixExp);
-        m_TokenDFAs[name] = DFA(expressionNFA);
-        m_TokenDFAs[name].drawTable(m_TokenDFAs[name].cleanTable());
+        std::string postfixExp = RegexHandler::infixToPostfix(regex);
+        NFA nfa = convertRegexToNFA(postfixExp);
+		nfas.push_back(nfa);
+		regexTerminalStates[name] = nfa.getTerminalStates();
     }
+	NFA combinedNFA = combineNFAs(nfas);
+	m_DFA = DFA(combinedNFA);
+    //m_DFA.minimize(regexTerminalStates);
+	
+	// Map every regex to its terminal closures in the DFA.
+	for (auto [name, terminalStates] : regexTerminalStates)
+		for (auto terminalState : terminalStates)
+            for (auto terminalClosure : m_DFA.getTerminalClosures())
+                if (terminalClosure.count(terminalState))
+				    m_regexEpsilonClosures[name].insert(terminalClosure);
+}
+
+// Combines all NFAs into a single NFA.
+NFA LexicalAnalyzerGenerator::combineNFAs(const std::vector<NFA>& nfas)
+{
+	std::shared_ptr<State> startState = std::make_shared<State>();
+	std::set<std::shared_ptr<State>> terminalStates;
+
+    for (auto nfa : nfas)
+    {
+        startState->addTransition(nfa.getStartState(), 0);
+		std::set<std::shared_ptr<State>> nfaTerminalStates = nfa.getTerminalStates();
+		terminalStates.insert(nfaTerminalStates.begin(), nfaTerminalStates.end());
+    }
+    return NFA(startState, terminalStates);
 }
 
 // Converts a regular definition to an NFA.
@@ -131,7 +157,7 @@ NFA LexicalAnalyzerGenerator::convertDefToNFA(const std::string& def)
 				startState->addTransition(terminalState, c);
         }
     }
-	return NFA(startState, terminalState);
+    return NFA(startState, { terminalState });
 }
 
 // Converts a symbol to an NFA.
@@ -164,7 +190,7 @@ NFA LexicalAnalyzerGenerator::convertSymbolToNFA(const std::string& word)
 
 	std::shared_ptr<State> terminalState = nextState;
 
-	return NFA(startState, terminalState);
+    return NFA(startState, { terminalState });
 }
 
 // Converts a regular expression to an NFA.
@@ -226,18 +252,13 @@ NFA LexicalAnalyzerGenerator::convertRegexToNFA(const std::string& postfixExp)
 
 int main()
 {
-    // Dummy states for debugging
-    //for (int i = 0; i < 20; i++)
-        //std::shared_ptr<State> dummy = std::make_shared<State>();
-
-    std::string regdef2 = "digit = 0-1";
     std::string regdef1 = "letter = a-b";
+    std::string regdef2 = "digit = 0-1";
     std::string regexp1 = "id: letter . (letter|digit)*";
     std::string regexp2 = "num: digit+ | digit+ . \\. . digit+ . ( \\L | E . digit+)";
     std::string regexp3 = "addop: \\+ | -";
     std::string regexp4 = "mulop: \\* | /";
     std::string regexp5 = "assign: =";
-    //std::string regexp6 = "relop: < | <.=";
     std::string regexp6 = "relop: =.= | !.= | > | >.= | < | <.=";
     std::string regexp7 = "logicalop: &.& | \\|.\\| | !";
 
@@ -251,10 +272,9 @@ int main()
     generator.processRegularExpression(regexp5);
     generator.processRegularExpression(regexp6);
     generator.processRegularExpression(regexp7);
+    
+    generator.generateDFA();
+	generator.m_DFA.drawTable(generator.m_DFA.cleanTable());
 
-    std::map<EpsilonClosure, EpsilonClosure> mp;
-    auto x = mp[EpsilonClosure()];
-
-    generator.generateDFAs();
     return 0;
 }

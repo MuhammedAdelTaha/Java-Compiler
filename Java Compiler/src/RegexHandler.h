@@ -4,10 +4,10 @@
 class RegexHandler
 {
 public:
-	std::string infixToPostfix(const std::string& regex);
+	static std::string infixToPostfix(const std::string& regex);
 
 private:
-	bool isOperator(char c) const;
-	bool isOperand(char c) const;
-	int getPrecedence(char op) const;
+	static bool isOperator(char c);
+	static bool isOperand(char c);
+	static int getPrecedence(char op);
 };

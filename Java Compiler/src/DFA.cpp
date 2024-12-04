@@ -4,8 +4,7 @@
 
 DFA::DFA(NFA& nfa)
 {
-	subsetConstruction(nfa.getStartState(), nfa.getTerminalState());
-	minimize();
+	subsetConstruction(nfa.getStartState(), nfa.getTerminalStates());
 }
 
 // Returns all the states that could be reached from a given state using only epsilon transitions.
@@ -37,7 +36,7 @@ EpsilonClosure DFA::getEpsilonClosure(std::shared_ptr<State> startState)
 }
 
 // Constructs the transitions table and the terminal states of a DFA from the start and final states of an NFA.
-void DFA::subsetConstruction(std::shared_ptr<State> startState, std::shared_ptr<State> terminalState)
+void DFA::subsetConstruction(std::shared_ptr<State> startState, std::set<std::shared_ptr<State>> terminalStates)
 {
 	std::set<EpsilonClosure> epsilonClosures;
 
@@ -58,7 +57,7 @@ void DFA::subsetConstruction(std::shared_ptr<State> startState, std::shared_ptr<
 		// If the epsilon closure contains a terminal state, then add it to the terminal states.
 		for (auto state : epsilonClosure)
 		{
-			if (state == terminalState)
+			if (terminalStates.contains(state))
 			{
 				m_TerminalClosures.insert(epsilonClosure);
 				break;
@@ -98,25 +97,32 @@ void DFA::subsetConstruction(std::shared_ptr<State> startState, std::shared_ptr<
 }
 
 // Returns a cleaner transition table that uses symbols, which represent every closure.
-std::unordered_map<char, std::map<char, char>> DFA::cleanTable() {
-	std::map<EpsilonClosure, char> mappedStates;
+std::unordered_map<std::string, std::map<char, std::string>> DFA::cleanTable() {
+	std::map<EpsilonClosure, std::string> mappedStates;
 	char x = 'A';
 	for (auto [fromClosure, transitions] : m_Table)
 	{
 		if (!mappedStates.contains(fromClosure))
-			mappedStates[fromClosure] = x++;
+			mappedStates[fromClosure] = std::string(1, x++);
 
 		for (auto [_, toClosure] : transitions)
 			if (!mappedStates.contains(toClosure))
-				mappedStates[toClosure] = x++;
+				mappedStates[toClosure] = std::string(1, x++);
 	}
 
-	std::unordered_map<char, std::map<char, char>> cleanedTable;
+	// Put (start) beside the start state.
+	mappedStates[m_StartClosure] += " (start)";
+
+	// Put (terminal) beside the terminal states.
+	for (auto terminalClosure : m_TerminalClosures)
+		mappedStates[terminalClosure] += " (terminal)";
+
+	std::unordered_map<std::string, std::map<char, std::string>> cleanedTable;
 	for (auto [fromClosure, transitions] : m_Table)
 	{
 		if (transitions.size() == 0)
 		{
-			cleanedTable.emplace(mappedStates[fromClosure], std::map<char, char>());
+			cleanedTable.emplace(mappedStates[fromClosure], std::map<char, std::string>());
 		}
 
 		for (auto [t, toClosure] : transitions)
@@ -129,11 +135,14 @@ std::unordered_map<char, std::map<char, char>> DFA::cleanTable() {
 }
 
 // Draws the transition table.
-void DFA::drawTable(std::unordered_map<char, std::map<char, char>> table){
+void DFA::drawTable(std::unordered_map<std::string, std::map<char, std::string>> table){
 	std::cout << "------------- Transition Table -------------\n";
 
 	for (auto [fromState, transitions] : table)
 	{
+		if (transitions.size() == 0)
+			continue;
+		
 		std::cout << fromState <<  ":\n";
 		for (auto [t, toState] : transitions)
 		{
@@ -145,23 +154,23 @@ void DFA::drawTable(std::unordered_map<char, std::map<char, char>> table){
 }
 
 // Initializes the partitions with terminal and non terminal partitions.
-std::set<std::set<EpsilonClosure>> DFA::initializePartitions() {
-    std::set<EpsilonClosure> terminalPartition;
+std::set<std::set<EpsilonClosure>> DFA::initializePartitions(std::map<std::string, EpsilonClosure> regexTerminalStates) {
     std::set<EpsilonClosure> nonTerminalPartition;
     std::set<std::set<EpsilonClosure>> partitions;
 
     for (auto [closure, _] : m_Table)
     {
-        if (m_TerminalClosures.contains(closure))
-            terminalPartition.insert(closure);
-        else
+        if (!m_TerminalClosures.contains(closure))
             nonTerminalPartition.insert(closure);
     }
 
-    if (!terminalPartition.empty())
-        partitions.insert(terminalPartition);
     if (!nonTerminalPartition.empty())
         partitions.insert(nonTerminalPartition);
+
+	for (auto [_, closure] : regexTerminalStates)
+	{
+		partitions.insert({ closure });
+	}
 
 	return partitions;
 }
@@ -207,15 +216,15 @@ std::set<std::set<EpsilonClosure>> DFA::splitPartition(std::set<EpsilonClosure> 
 }
 
 // Minimizes the DFA.
-void DFA::minimize()
+void DFA::minimize(std::map<std::string, std::set<std::shared_ptr<State>>> regexTerminalStates)
 {
     // If the table is empty or has only one state, no minimization is needed.
 
-	// TODO: change this or change the table to reflect all states in the DFA even if they dont have any transitions
+	// TODO: change this or change the table to reflect all states in the DFA even if they don't have any transitions
     if (m_Table.size() <= 1) 
         return;
 
-    std::set<std::set<EpsilonClosure>> partitions = initializePartitions();
+    std::set<std::set<EpsilonClosure>> partitions = initializePartitions(regexTerminalStates);
 
     // Iterate until there are no more partition splits.
     bool isPartitionsChanged;

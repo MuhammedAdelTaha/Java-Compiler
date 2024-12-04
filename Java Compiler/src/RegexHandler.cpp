@@ -67,15 +67,18 @@ std::string RegexHandler::infixToPostfix(const std::string& regex)
     return postfixExp.str();
 }
 
-bool RegexHandler::isOperator(char c) const {
+bool RegexHandler::isOperator(char c) 
+{
     return c == '*' || c == '+' || c == '.' || c == '|' || c == '(' || c == ')';
 }
 
-bool RegexHandler::isOperand(char c) const {
+bool RegexHandler::isOperand(char c) 
+{
 	return !isOperator(c);
 }
 
-int RegexHandler::getPrecedence(char op) const {
+int RegexHandler::getPrecedence(char op) 
+{
     switch (op) {
         case '(': case ')': return 4;
         case '*': case '+': return 3;
