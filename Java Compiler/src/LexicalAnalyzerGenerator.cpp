@@ -103,7 +103,7 @@ void LexicalAnalyzerGenerator::processPunctuations(const std::string& line)
 void LexicalAnalyzerGenerator::generateDFA()
 {
     std::vector<NFA> nfas;
-    std::map<std::string, EpsilonClosure> regexTerminalStates;
+    std::map<std::string, std::set<std::shared_ptr<State>>> regexTerminalStates;
 
     // Generate DFA for regular expressions.
     for (auto [name, regex] : m_RegularExpressions)
@@ -115,7 +115,6 @@ void LexicalAnalyzerGenerator::generateDFA()
     }
 	NFA combinedNFA = combineNFAs(nfas);
 	m_DFA = DFA(combinedNFA);
-    //m_DFA.minimize(regexTerminalStates);
 	
 	// Map every regex to its terminal closures in the DFA.
 	for (auto [name, terminalStates] : regexTerminalStates)

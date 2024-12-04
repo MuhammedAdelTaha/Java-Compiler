@@ -9,6 +9,9 @@ NFA::NFA(std::shared_ptr<State> startState, std::set<std::shared_ptr<State>> ter
 
 std::shared_ptr<State> NFA::combineTerminalStates(std::set<std::shared_ptr<State>>& terminalStates)
 {
+	if (terminalStates.size() == 1)
+		return *terminalStates.begin();
+
 	std::shared_ptr<State> combinedTerminalState = std::make_shared<State>();
 	for (auto terminalState : terminalStates)
 		terminalState->addTransition(combinedTerminalState, 0);
