@@ -1,48 +1,61 @@
 #include <iostream>
-#include <memory>
+#include <sstream>
 #include <set>
 #include "NFA.h"
 #include "DFA.h"
+#include "Utilities.h"
+#include "LexicalAnalyzer.h"
 #include "LexicalAnalyzerGenerator.h"
 
-//int main()
-//{
-//	const std::string relativeFilePath = "files\\rules.txt";
-//	LexicalAnalyzerGenerator generator(relativeFilePath);
-//	
-//	auto tokensPrecedence = generator.getTokensPrecedence();
-//	auto regularDefinitions = generator.getRegularDefinitions();
-//	auto regularExpressions = generator.getRegularExpressions();
-//	auto keywords = generator.getKeywords();
-//	auto punctuations = generator.getPunctuations();
-//
-//	// Print them
-//	std::cout << "Tokens Precedence:\n";
-//	for (const auto& token : tokensPrecedence)
-//		std::cout << token << std::endl;
-//
-//	std::cout << "\nRegular Definitions:\n";
-//	for (const auto& [name, definition] : regularDefinitions)
-//		std::cout << name << " -> " << definition << std::endl;
-//
-//	std::cout << "\nRegular Expressions:\n";
-//	for (const auto& [name, regex] : regularExpressions)
-//		std::cout << name << " -> " << regex << std::endl;
-//
-//	std::cout << "\nKeywords:\n";
-//	for (const auto& keyword : keywords)
-//		std::cout << keyword << std::endl;
-//
-//	std::cout << "\nPunctuations:\n";
-//	for (const auto& punct : punctuations)
-//		std::cout << punct << std::endl;
-//
-//	auto tokenDFAs = generator.getTokenDFAs();
-//	for (auto [name, dfa] : tokenDFAs)
-//	{
-//		std::cout << "\nDFA for " << name << ":\n";
-//		dfa.drawTable(dfa.cleanTable());
-//	}
-//
-//	return 0;
-//}
+int main()
+{
+	const std::string rulesFilePath = "files\\rules.txt";
+	const std::string programFilePath = "files\\program.txt";
+
+	LexicalAnalyzerGenerator generator(rulesFilePath);
+	const std::string program = readFileToString(programFilePath);
+	
+	DFA dfa = generator.getDFA();
+	std::set<std::string> keywords = generator.getKeywords();
+	std::set<std::string> punctuations = generator.getPunctuations();
+	std::map<std::string, int> tokensPrecedence = generator.getTokensPrecedence();
+	std::map<std::string, std::set<EpsilonClosure>> regexEpsilonClosures = generator.getRegexEpsilonClosures();
+	
+	LexicalAnalyzer lexicalAnalyzer
+	(
+		program,
+		dfa,
+		keywords,
+		punctuations,
+		tokensPrecedence,
+		regexEpsilonClosures
+	);
+
+	std::pair<std::string, std::string> token;
+	std::map<std::string, std::string> memo;
+	std::ostringstream outputProgram;
+
+	while ((token = lexicalAnalyzer.getNextToken()) != std::make_pair("", ""))
+	{
+		if (token.first == "error" && token.second == "error")
+			continue;
+
+		if (memo.count(token.first))
+		{
+			outputProgram << memo[token.first] << ' ';
+			continue;
+		}
+
+		if (token.second != "")
+		{
+			memo[token.first] = token.second;
+			outputProgram << token.second << ' ';
+		}
+		else
+			outputProgram << token.first << ' ';
+	}
+
+	std::cout << outputProgram.str() << std::endl;
+
+	return 0;
+}

@@ -86,7 +86,7 @@ void LexicalAnalyzerGenerator::processKeywords(const std::string& line)
     std::string keyword;
 
     while (ss >> keyword)
-        m_Keywords.push_back(keyword);
+        m_Keywords.insert(keyword);
 }
 
 // Processes a list of punctuations and adds them to the punctuations vector.
@@ -96,7 +96,12 @@ void LexicalAnalyzerGenerator::processPunctuations(const std::string& line)
     std::string punctuation;
 
     while (ss >> punctuation)
-        m_Punctuations.push_back(punctuation);
+    {
+		if (punctuation[0] == '\\')
+			m_Punctuations.insert(punctuation.substr(1, punctuation.size() - 1));
+        else
+            m_Punctuations.insert(punctuation);
+    }
 }
 
 // Generates DFAs for all regular expressions.
@@ -121,7 +126,7 @@ void LexicalAnalyzerGenerator::generateDFA()
 		for (auto terminalState : terminalStates)
             for (auto terminalClosure : m_DFA.getTerminalClosures())
                 if (terminalClosure.count(terminalState))
-				    m_regexEpsilonClosures[name].insert(terminalClosure);
+				    m_RegexEpsilonClosures[name].insert(terminalClosure);
 }
 
 // Combines all NFAs into a single NFA.
@@ -247,33 +252,4 @@ NFA LexicalAnalyzerGenerator::convertRegexToNFA(const std::string& postfixExp)
 
     // Final NFA will be on top of the stack
     return nfaStack.top();
-}
-
-int main()
-{
-    std::string regdef1 = "letter = a-b";
-    std::string regdef2 = "digit = 0-1";
-    std::string regexp1 = "id: letter . (letter|digit)*";
-    std::string regexp2 = "num: digit+ | digit+ . \\. . digit+ . ( \\L | E . digit+)";
-    std::string regexp3 = "addop: \\+ | -";
-    std::string regexp4 = "mulop: \\* | /";
-    std::string regexp5 = "assign: =";
-    std::string regexp6 = "relop: =.= | !.= | > | >.= | < | <.=";
-    std::string regexp7 = "logicalop: &.& | \\|.\\| | !";
-
-    LexicalAnalyzerGenerator generator;
-    generator.processRegularDefinition(regdef1);
-    generator.processRegularDefinition(regdef2);
-    generator.processRegularExpression(regexp1);
-    generator.processRegularExpression(regexp2);
-    generator.processRegularExpression(regexp3);
-    generator.processRegularExpression(regexp4);
-    generator.processRegularExpression(regexp5);
-    generator.processRegularExpression(regexp6);
-    generator.processRegularExpression(regexp7);
-    
-    generator.generateDFA();
-	generator.m_DFA.drawTable(generator.m_DFA.cleanTable());
-
-    return 0;
 }

@@ -12,9 +12,11 @@ public:
 
 	inline DFA getDFA() const { return m_DFA; }
     inline std::map<std::string, int> getTokensPrecedence() const { return m_TokensPrecedence; }
-	inline std::map<std::string, std::set<EpsilonClosure>> getRegexEpsilonClosures() const { return m_regexEpsilonClosures; }
+	inline std::map<std::string, std::set<EpsilonClosure>> getRegexEpsilonClosures() const { return m_RegexEpsilonClosures; }
+    inline std::set<std::string> getKeywords() const { return m_Keywords; }
+	inline std::set<std::string> getPunctuations() const { return m_Punctuations; }
 
-//private:
+private:
     void readRulesFromFile();
     void processRegularDefinition(const std::string& line);
     void processRegularExpression(const std::string& line);
@@ -26,14 +28,14 @@ public:
     NFA convertRegexToNFA(const std::string& regex);
     NFA convertSymbolToNFA(const std::string& sym);
 
-//private:
+private:
     DFA m_DFA;
     std::map<std::string, int> m_TokensPrecedence;
-	std::map<std::string, std::set<EpsilonClosure>> m_regexEpsilonClosures;
+	std::map<std::string, std::set<EpsilonClosure>> m_RegexEpsilonClosures;
 	
     std::string m_FilePath;
     std::map<std::string, std::string> m_RegularDefinitions;
     std::map<std::string, std::string> m_RegularExpressions;
-    std::vector<std::string> m_Keywords;
-    std::vector<std::string> m_Punctuations;
+    std::set<std::string> m_Keywords;
+    std::set<std::string> m_Punctuations;
 };

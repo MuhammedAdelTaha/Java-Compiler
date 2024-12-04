@@ -138,6 +138,7 @@
     <ClCompile Include="src\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="files\program.txt" />
     <Text Include="files\rules.txt" />
   </ItemGroup>
   <ItemGroup>
