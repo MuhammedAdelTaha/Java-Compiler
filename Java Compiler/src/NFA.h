@@ -1,20 +1,24 @@
 #pragma once
+#include <set>
 #include "State.h"
 
 class NFA
 {
 public:
-	NFA(std::shared_ptr<State> startState, std::shared_ptr<State> terminalState);
-	std::shared_ptr<State> getStartState();
-	std::shared_ptr<State> getTerminalState();
+	NFA() = default;
+	NFA(std::shared_ptr<State> startState, std::set<std::shared_ptr<State>> terminalStates);
+	inline std::shared_ptr<State> getStartState() const { return m_StartState; }
+	inline std::set<std::shared_ptr<State>> getTerminalStates() const { return m_TerminalStates; }
 	void concatenate(NFA& other);
 	void unionize(NFA& other);
-	void unionize(NFA& other, uint32_t id1, uint32_t id2);
 	void kleeneClosure();
-	void kleeneClosure(uint32_t id1, uint32_t id2);
 	void positiveClosure();
-	void traverse();
+
+private:
+	std::shared_ptr<State> combineTerminalStates(std::set<std::shared_ptr<State>>& terminalStates);
+
 private:
 	std::shared_ptr<State> m_StartState;
-	std::shared_ptr<State> m_TerminalState;
+	std::set<std::shared_ptr<State>> m_TerminalStates;
 };
+

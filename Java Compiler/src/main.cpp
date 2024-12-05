@@ -1,53 +1,61 @@
 #include <iostream>
-#include <memory>
+#include <sstream>
 #include <set>
 #include "NFA.h"
 #include "DFA.h"
+#include "Utilities.h"
+#include "LexicalAnalyzer.h"
+#include "LexicalAnalyzerGenerator.h"
 
 int main()
 {
-	auto s2 = std::make_shared<State>(2);
-	auto s3 = std::make_shared<State>(3);
-	auto s4 = std::make_shared<State>(4);
-	auto s5 = std::make_shared<State>(5);
-	auto s7 = std::make_shared<State>(100);
-	auto s8 = std::make_shared<State>(8);
-	auto s9 = std::make_shared<State>(101);
-	auto s10 = std::make_shared<State>(9);
-	auto s11 = std::make_shared<State>(102);
-	auto s12 = std::make_shared<State>(10);
+	const std::string rulesFilePath = "files\\rules.txt";
+	const std::string programFilePath = "files\\program.txt";
 
-	s2->addTransition(s3, 'a');
-	s4->addTransition(s5, 'b');
+	LexicalAnalyzerGenerator generator(rulesFilePath);
+	const std::string program = readFileToString(programFilePath);
+	
+	DFA dfa = generator.getDFA();
+	std::set<std::string> keywords = generator.getKeywords();
+	std::set<std::string> punctuations = generator.getPunctuations();
+	std::map<std::string, int> tokensPrecedence = generator.getTokensPrecedence();
+	std::map<std::string, std::set<EpsilonClosure>> regexEpsilonClosures = generator.getRegexEpsilonClosures();
+	
+	LexicalAnalyzer lexicalAnalyzer
+	(
+		program,
+		dfa,
+		keywords,
+		punctuations,
+		tokensPrecedence,
+		regexEpsilonClosures
+	);
 
-	NFA nfa1(s2, s3);
-	NFA nfa2(s4, s5);
+	std::pair<std::string, std::string> token;
+	std::map<std::string, std::string> memo;
+	std::ostringstream outputProgram;
 
-	nfa1.unionize(nfa2, 1, 6);
-	nfa1.kleeneClosure(0, 7);
+	while ((token = lexicalAnalyzer.getNextToken()) != std::make_pair("", ""))
+	{
+		if (token.first == "error" && token.second == "error")
+			continue;
 
-	s7->addTransition(s8, 'a');
-	s9->addTransition(s10, 'b');
-	s11->addTransition(s12, 'b');
+		if (memo.count(token.first))
+		{
+			outputProgram << memo[token.first] << ' ';
+			continue;
+		}
 
-	NFA nfa3(s7, s8);
-	NFA nfa4(s9, s10);
-	NFA nfa5(s11, s12);
+		if (token.second != "")
+		{
+			memo[token.first] = token.second;
+			outputProgram << token.second << ' ';
+		}
+		else
+			outputProgram << token.first << ' ';
+	}
 
-	nfa3.concatenate(nfa4);
-	nfa3.concatenate(nfa5);
+	std::cout << outputProgram.str() << std::endl;
 
-	nfa1.concatenate(nfa3);
-
-	DFA dfa(nfa1);
-
-	auto table = dfa.getTable();
-	auto cleanTable = dfa.cleanTable();
-	dfa.drawTable(cleanTable);
-
-	// A -> B
-	// B -> 
-	// C -> 
-	// D -> C
-	// E -> A
+	return 0;
 }
