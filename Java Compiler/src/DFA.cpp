@@ -313,20 +313,3 @@ void DFA::minimize()
 	m_Table = newTable;
 	m_TerminalClosures = std::set<EpsilonClosure>(newTerminalClosures.begin(), newTerminalClosures.end());
 }
-
-//int main() {
-//	std::shared_ptr<State> s0 = std::make_shared<State>();
-//	std::shared_ptr<State> s1 = std::make_shared<State>();
-//	s0->addTransition(s1, '+');
-//	NFA nfa1(s0, s1);
-//	
-//	std::shared_ptr<State> s3 = std::make_shared<State>();
-//	std::shared_ptr<State> s4 = std::make_shared<State>();
-//	s3->addTransition(s4, '-');
-//	NFA nfa2(s3, s4);
-//
-//	nfa2.unionize(nfa1);
-//
-//	DFA dfa(nfa2);
-//	dfa.drawTable(dfa.cleanTable());
-//}
