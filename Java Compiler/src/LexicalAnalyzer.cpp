@@ -15,19 +15,20 @@ LexicalAnalyzer::LexicalAnalyzer(
 }
 
 // Main method to get the next token from the input.
-std::pair<std::string, std::string> LexicalAnalyzer::getNextToken() 
+std::pair<std::string, std::string> LexicalAnalyzer::getNextToken()
 {
     // Skip any leading whitespaces.
     skipWhitespaces();
 
     // If we've reached the end of input, return an empty token.
     if (m_CurrentPosition >= m_InputText.length())
-        return { "", "" };
+        return { "$", "$" };
 
     if (m_Punctuations.contains(m_InputText.substr(m_CurrentPosition, 1)))
     {
 		m_CurrentPosition++;
-		return { m_InputText.substr(m_CurrentPosition - 1, 1), "" };
+        std::string punctuation = m_InputText.substr(m_CurrentPosition - 1, 1);
+        return { punctuation, punctuation };
     }
 
     // Store the best match found
@@ -45,7 +46,7 @@ std::pair<std::string, std::string> LexicalAnalyzer::getNextToken()
 		if (m_Keywords.contains(charSequence))
 		{
 			m_CurrentPosition = start + 1;
-			return { charSequence, "" };
+			return { charSequence, charSequence };
 		}
 
 		// If no transition exists for the current character, break the loop
@@ -76,7 +77,7 @@ std::pair<std::string, std::string> LexicalAnalyzer::getNextToken()
 	for (auto token : bestMatchTokens)
 		if (bestMatchToken.empty() || m_TokensPrecedence[token] > m_TokensPrecedence[bestMatchToken])
 			bestMatchToken = token;
-    
+
     // Update current position and return the best match
     m_CurrentPosition += bestMatchText.length();
     return { bestMatchText, bestMatchToken };

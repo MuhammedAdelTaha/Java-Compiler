@@ -30,8 +30,7 @@ void LexicalAnalyzerGenerator::readRulesFromFile()
     while (std::getline(file, line)) 
     {
         // Remove leading and trailing whitespaces.
-        line.erase(0, line.find_first_not_of(" \t"));
-        line.erase(line.find_last_not_of(" \t") + 1);
+		line = trimStringEdges(line);
 
         if (line.empty()) 
             continue;
@@ -52,9 +51,8 @@ void LexicalAnalyzerGenerator::readRulesFromFile()
 void LexicalAnalyzerGenerator::processRegularDefinition(const std::string& line) 
 {
     // Trim all whitespaces.
-	std::string trimmedLine = line;
-	trimmedLine.erase(std::remove_if(trimmedLine.begin(), trimmedLine.end(), ::isspace), trimmedLine.end());
-
+    std::string trimmedLine = trimString(line);
+	
     size_t pos = trimmedLine.find('=');
     std::string lhs = trimmedLine.substr(0, pos);
     std::string rhs = trimmedLine.substr(pos + 1);
@@ -66,8 +64,7 @@ void LexicalAnalyzerGenerator::processRegularDefinition(const std::string& line)
 void LexicalAnalyzerGenerator::processRegularExpression(const std::string& line) 
 {
     // Trim all whitespaces.
-    std::string trimmedLine = line;
-    trimmedLine.erase(std::remove_if(trimmedLine.begin(), trimmedLine.end(), ::isspace), trimmedLine.end());
+	std::string trimmedLine = trimString(line);
 
     size_t pos = trimmedLine.find(':');
     std::string lhs = trimmedLine.substr(0, pos);
@@ -96,12 +93,7 @@ void LexicalAnalyzerGenerator::processPunctuations(const std::string& line)
     std::string punctuation;
 
     while (ss >> punctuation)
-    {
-		if (punctuation[0] == '\\')
-			m_Punctuations.insert(punctuation.substr(1, punctuation.size() - 1));
-        else
-            m_Punctuations.insert(punctuation);
-    }
+        m_Punctuations.insert(punctuation);
 }
 
 // Generates DFAs for all regular expressions.
@@ -201,7 +193,7 @@ NFA LexicalAnalyzerGenerator::convertSymbolToNFA(const std::string& word)
 NFA LexicalAnalyzerGenerator::convertRegexToNFA(const std::string& postfixExp) 
 {
     // Split the expression on whitespaces.
-    std::vector<std::string> words = splitWords(postfixExp);
+    std::vector<std::string> words = split(postfixExp, ' ');
 
     // Stack to handle postfix expressions conversion.
     std::stack<NFA> nfaStack;

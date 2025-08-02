@@ -129,23 +129,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\CFGParser.cpp" />
+    <ClCompile Include="src\CFGParsingTests.cpp" />
+    <ClCompile Include="src\Parser.cpp" />
     <ClCompile Include="src\DFA.cpp" />
     <ClCompile Include="src\LexicalAnalyzer.cpp" />
     <ClCompile Include="src\LexicalAnalyzerGenerator.cpp" />
     <ClCompile Include="src\NFA.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\RegexHandler.cpp" />
+    <ClCompile Include="src\ParseTableGenerator.cpp" />
     <ClCompile Include="src\State.cpp" />
     <ClCompile Include="src\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="files\program.txt" />
-    <Text Include="files\rules.txt" />
+    <Text Include="files\syntax_rules.txt" />
+    <Text Include="files\source_program.txt" />
+    <Text Include="files\lexical_rules.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\CFGParser.h" />
+    <ClInclude Include="src\Parser.h" />
     <ClInclude Include="src\DFA.h" />
     <ClInclude Include="src\LexicalAnalyzer.h" />
     <ClInclude Include="src\LexicalAnalyzerGenerator.h" />
+    <ClInclude Include="src\ParseTableGenerator.h" />
     <ClInclude Include="src\RegexHandler.h" />
     <ClInclude Include="src\State.h" />
     <ClInclude Include="src\NFA.h" />

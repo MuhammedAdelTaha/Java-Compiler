@@ -6,22 +6,56 @@
 #include "Utilities.h"
 #include "LexicalAnalyzer.h"
 #include "LexicalAnalyzerGenerator.h"
+#include "Parser.h"
+#include "ParseTableGenerator.h"
+
+void printGrammar(const std::map<std::string, std::vector<std::vector<Symbol>>>& grammar)
+{
+	std::cout << "GRAMMAR: \n";
+	for (const auto& [nonTerminal, productions] : grammar)
+	{
+		std::cout << nonTerminal << " -> ";
+		for (size_t i = 0; i < productions.size(); ++i)
+		{
+			const auto& prod = productions[i];
+			if (prod.empty())
+			{
+				std::cout << "epsilon"; // Represent epsilon
+			}
+			else
+			{
+				for (const auto& symbol : prod)
+				{
+					std::cout << symbol.name << " ";
+				}
+			}
+			if (i != productions.size() - 1)
+			{
+				std::cout << "| ";
+			}
+		}
+		std::cout << "\n";
+	}
+	std::cout << "==========================================\n";
+}
 
 int main()
 {
-	const std::string rulesFilePath = "files\\rules.txt";
-	const std::string programFilePath = "files\\program.txt";
+	const std::string lexicalRules = "files\\lexical_rules.txt";
+	const std::string syntaxRules = "files\\syntax_rules.txt";
+	const std::string sourceProgram = "files\\source_program.txt";
 
-	LexicalAnalyzerGenerator generator(rulesFilePath);
-	const std::string program = readFileToString(programFilePath);
-	
-	DFA dfa = generator.getDFA();
-	std::set<std::string> keywords = generator.getKeywords();
-	std::set<std::string> punctuations = generator.getPunctuations();
-	std::map<std::string, int> tokensPrecedence = generator.getTokensPrecedence();
-	std::map<std::string, std::set<EpsilonClosure>> regexEpsilonClosures = generator.getRegexEpsilonClosures();
-	
-	LexicalAnalyzer lexicalAnalyzer
+	// Step 1: Generating the lexical analyzer from the lexical rules.
+	LexicalAnalyzerGenerator lexicalAnalyzerGenerator(lexicalRules);
+	const std::string program = readFileToString(sourceProgram);
+
+	DFA dfa = lexicalAnalyzerGenerator.getDFA();
+	std::set<std::string> keywords = lexicalAnalyzerGenerator.getKeywords();
+	std::set<std::string> punctuations = lexicalAnalyzerGenerator.getPunctuations();
+	std::map<std::string, int> tokensPrecedence = lexicalAnalyzerGenerator.getTokensPrecedence();
+	std::map<std::string, std::set<EpsilonClosure>> regexEpsilonClosures = lexicalAnalyzerGenerator.getRegexEpsilonClosures();
+
+	LexicalAnalyzer lexicalAnalyzer = LexicalAnalyzer
 	(
 		program,
 		dfa,
@@ -31,31 +65,19 @@ int main()
 		regexEpsilonClosures
 	);
 
-	std::pair<std::string, std::string> token;
-	std::map<std::string, std::string> memo;
-	std::ostringstream outputProgram;
+	// Step 2: Generating the parser from the syntax rules.
+	ParseTableGenerator parseTableGenerator(syntaxRules);
+	Symbol startSymbol = parseTableGenerator.getStartSymbol();
 
-	while ((token = lexicalAnalyzer.getNextToken()) != std::make_pair("", ""))
-	{
-		if (token.first == "error" && token.second == "error")
-			continue;
+	parseTableGenerator.generateFirstTable();
+	parseTableGenerator.generateFollowTable(startSymbol);
+	parseTableGenerator.generateParseTable();
 
-		if (memo.count(token.first))
-		{
-			outputProgram << memo[token.first] << ' ';
-			continue;
-		}
+	printGrammar(parseTableGenerator.getGrammar());
+	parseTableGenerator.printParseTable();
 
-		if (token.second != "")
-		{
-			memo[token.first] = token.second;
-			outputProgram << token.second << ' ';
-		}
-		else
-			outputProgram << token.first << ' ';
-	}
-
-	std::cout << outputProgram.str() << std::endl;
-
-	return 0;
+	std::vector<std::vector<std::string>> outputs;
+	Parser parser(lexicalAnalyzer, parseTableGenerator.getParseTable(), startSymbol);
+	while (!parser.isFinished())
+		parser.parseNextToken();
 }

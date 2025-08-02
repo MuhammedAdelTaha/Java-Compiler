@@ -8,4 +8,4 @@ addop: \+ | -
 mulop: \* | /
 {boolean int float}
 {if else while}
-[, ; \( \) { }]
+[, ; ( ) { }]

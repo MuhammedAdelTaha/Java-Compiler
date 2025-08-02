@@ -1,16 +1,29 @@
 #include "Utilities.h"
+#include <iostream>
 
-std::vector<std::string> splitWords(const std::string& str) 
+std::string trimString(const std::string& str)
 {
-    std::vector<std::string> words;
-    std::istringstream iss(str);
-    std::string word;
+	std::string trimmedStr = str;
+	trimmedStr.erase(std::remove_if(trimmedStr.begin(), trimmedStr.end(), ::isspace), trimmedStr.end());
+	return trimmedStr;
+}
 
-    // Use stream extraction to automatically handle multiple whitespaces.
-    while (iss >> word)
-        words.push_back(word);
+std::string trimStringEdges(const std::string& str)
+{
+	std::string trimmedStr = str;
+	trimmedStr.erase(0, trimmedStr.find_first_not_of(" \t"));
+	trimmedStr.erase(trimmedStr.find_last_not_of(" \t") + 1);
+	return trimmedStr;
+}
 
-    return words;
+std::vector<std::string> split(const std::string& str, const char delimeter) 
+{
+	std::string token;
+    std::vector<std::string> strs;
+	std::istringstream tokenStream(str);
+	while (std::getline(tokenStream, token, delimeter))
+		strs.push_back(trimStringEdges(token));
+	return strs;
 }
 
 std::string readFileToString(const std::string& filePath)
@@ -41,3 +54,18 @@ std::string readFileToString(const std::string& filePath)
 
 	return oss.str();
 }
+
+//int main()
+//{
+//	std::vector<std::string> strs = split("Hello World, Mohamed, Adel Mahmoud, Taha", ',');
+//
+//	for (const std::string& str : strs)
+//	{
+//		std::vector<std::string> tokens = split(str, ' ');
+//		for (const std::string& token : tokens)
+//			std::cout << token << ',';
+//		std::cout << std::endl;
+//	}	
+//
+//	return 0;
+//}
